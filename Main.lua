@@ -639,6 +639,36 @@ function ConsumesManager_CreateManagerContent(parentFrame)
     ConsumesManager_Options.sortOrder = ConsumesManager_Options.sortOrder or "name"
     ConsumesManager_Options.sortDirection = ConsumesManager_Options.sortDirection or "asc"
 
+    -- ==========================
+    -- Tracker Search Box
+    -- ==========================
+    local trackerSearchBox = CreateFrame("EditBox", "ConsumesManager_TrackerSearchBox", parentFrame, "InputBoxTemplate")
+    trackerSearchBox:SetWidth(WindowWidth - 50)
+    trackerSearchBox:SetHeight(25)
+    trackerSearchBox:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -5)
+    trackerSearchBox:SetAutoFocus(false)
+    trackerSearchBox:SetText("Search...")
+    trackerSearchBox:SetTextColor(0.5, 0.5, 0.5)
+
+    trackerSearchBox:SetScript("OnEditFocusGained", function()
+        if this:GetText() == "Search..." then
+            this:SetText("")
+            this:SetTextColor(1, 1, 1)
+        end
+    end)
+
+    trackerSearchBox:SetScript("OnEditFocusLost", function()
+        if this:GetText() == "" then
+            this:SetText("Search...")
+            this:SetTextColor(0.5, 0.5, 0.5)
+        end
+    end)
+
+    trackerSearchBox:SetScript("OnTextChanged", function()
+        ConsumesManager_UpdateManagerContent()
+    end)
+
+    parentFrame.searchBox = trackerSearchBox
 
     -- Create buttons for sorting
     local orderByNameButton = CreateFrame("Button", "ConsumesManager_OrderByNameButton", parentFrame, "UIPanelButtonTemplate")
@@ -646,7 +676,7 @@ function ConsumesManager_CreateManagerContent(parentFrame)
     orderByNameButton:SetHeight(24)
     orderByNameButton:SetText("Order by Name")
     orderByNameButton:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 10, "NORMAL")
-    orderByNameButton:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -5)
+    orderByNameButton:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -40)
     orderByNameButton:SetScript("OnClick", function()
         if ConsumesManager_Options.sortOrder == "name" then
             -- Toggle sort direction
@@ -692,8 +722,8 @@ function ConsumesManager_CreateManagerContent(parentFrame)
 
     -- Scroll Frame
     local scrollFrame = CreateFrame("ScrollFrame", "ConsumesManager_ManagerScrollFrame", parentFrame)
-    scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -35) -- Adjusted to be below the buttons
-    scrollFrame:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", -20, 0)
+    scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -75) -- Adjusted to be below the buttons and search
+    scrollFrame:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", -20, 16)
     scrollFrame:EnableMouseWheel(true)
     scrollFrame:SetScript("OnMouseWheel", function()
         local delta = arg1
@@ -839,7 +869,7 @@ function ConsumesManager_CreateManagerContent(parentFrame)
 
     -- Scroll Bar
     local scrollBar = CreateFrame("Slider", "ConsumesManager_ManagerScrollBar", parentFrame)
-    scrollBar:SetPoint("TOPRIGHT", parentFrame, "TOPRIGHT", -2, -35) -- Adjusted to be below the buttons
+    scrollBar:SetPoint("TOPRIGHT", parentFrame, "TOPRIGHT", -2, -75) -- Adjusted to be below the buttons and search
     scrollBar:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", -2, 16)
     scrollBar:SetWidth(16)
     scrollBar:SetOrientation('VERTICAL')
@@ -868,6 +898,15 @@ function ConsumesManager_UpdateManagerContent()
     local ManagerFrame = ConsumesManager_MainFrame.tabs[1]
     local realmName = GetRealmName()
     local playerName = UnitName("player")
+
+    -- Read Tracker filter text (if present)
+    local filterText = ""
+    if ManagerFrame and ManagerFrame.searchBox and ManagerFrame.searchBox:GetText() then
+        filterText = string.lower(ManagerFrame.searchBox:GetText())
+        if filterText == "search..." then
+            filterText = ""
+        end
+    end
 
     -- Ensure data structure exists
     if not ConsumesManager_Data[realmName] then
@@ -930,7 +969,8 @@ function ConsumesManager_UpdateManagerContent()
 
             for _, itemInfo in ipairs(categoryInfo.Items) do
                 local itemID = itemInfo.itemID
-                if ConsumesManager_SelectedItems[itemID] then
+                local nameMatches = (filterText == "" or string.find(string.lower(itemInfo.name), filterText, 1, true))
+                if ConsumesManager_SelectedItems[itemID] and nameMatches then
                     -- Sum counts across all selected characters
                     local totalCount = 0
                     for character, _ in pairs(ConsumesManager_Data[realmName]) do
@@ -1039,7 +1079,8 @@ function ConsumesManager_UpdateManagerContent()
             categoryInfo.label:Hide()
             for _, itemInfo in ipairs(categoryInfo.Items) do
                 local itemID = itemInfo.itemID
-                if ConsumesManager_SelectedItems[itemID] then
+                local nameMatches = (filterText == "" or string.find(string.lower(itemInfo.name), filterText, 1, true))
+                if ConsumesManager_SelectedItems[itemID] and nameMatches then
                     -- Sum counts across all selected characters
                     local totalCount = 0
                     for character, charData in pairs(ConsumesManager_Data[realmName]) do
