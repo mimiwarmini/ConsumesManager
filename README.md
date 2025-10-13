@@ -1,5 +1,3 @@
-Currently in beta and needs testing. Report bugs here: https://github.com/Cinecom/ConsumesTracker/issues
-
 # Consumes Manager
 Easily track and manage your consumables, food buffs, and more across your inventory, bank, and mail, while supporting multiple characters and accounts.
 Created with ♥ by Horyoshi for World of Warcraft 1.12 **Turtle WoW**
